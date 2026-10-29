@@ -126,7 +126,7 @@
     G = {
       id: id, pi: pi, def: def, P: P, rec: rec, li: li,
       val: new Array(P.N).fill(''), rev: new Uint8Array(P.N), bad: new Uint8Array(P.N),
-      sel: -1, dir: 'a', cur: null, els: [], undo: [], t: rec.t || 0, done: !!rec.d,
+      sel: -1, dir: 'a', pin: false, cur: null, els: [], undo: [], t: rec.t || 0, done: !!rec.d,
       hints: rec.h || 0, assisted: !!rec.as, hintShown: {}, sinceSave: 0, entBox: {}, sol: new Uint8Array(P.entries.length)
     };
     P.entries.forEach(function (e) { (G.entBox[e.box] = G.entBox[e.box] || {})[e.d] = e.id; });
@@ -219,6 +219,12 @@
     V.tools = h('div', { class: 'g-tools' },
       h('div', { class: 'coin-chip' }, H.icon('coin'), V.coins),
       tool('bulb', 'רמז', openHints),
+      (V.pinBtn = tool('lock', 'מנעול', function () {
+        if (G.done) return;
+        if (G.sel < 0) { H.toast('בחר משבצת קודם', 1200); return; }
+        setPin(!G.pin);
+        H.toast(G.pin ? 'נעול על המשבצת' : 'המנעול כבוי', 1100);
+      })),
       tool('undo', 'בטל', undo),
       tool('trash', 'נקה מילה', clearWord),
       micOK ? tool('mic', 'הקלטה', listen) : null,
@@ -343,6 +349,12 @@
     var a = G.P.ea[c], d = G.P.ed[c];
     el.classList.toggle('sol', (a >= 0 && G.sol[a] === 1) || (d >= 0 && G.sol[d] === 1));
   }
+  /* משבצת של מילה שנפתרה נכון (אפורה) ננעלת ואי אפשר לשנות בה אות */
+  function isLocked(i) {
+    var a = G.P.ea[i], d = G.P.ed[i];
+    return (a >= 0 && G.sol[a] === 1) || (d >= 0 && G.sol[d] === 1);
+  }
+  function isFixed(i) { return !!G.rev[i] || isLocked(i); }
   function syncSol(i) {
     [G.P.ea[i], G.P.ed[i]].forEach(function (id) {
       if (id < 0) return;
@@ -508,17 +520,36 @@
     ch = E.normLetters(ch);
     if (!ch) return;
     var i = G.sel;
-    if (G.rev[i]) { advance(); return; }
+    if (isFixed(i)) {
+      /* אות נעולה: ממשיכים רק אם הוקלדה אותה האות, אחרת נשארים במקום */
+      if (ch === G.val[i]) advance(); else H.toast('האות הזו נעולה', 900);
+      return;
+    }
     var e = G.cur;
-    var wasFull = e && !entryHasEmpty(e);
+    var ids = [G.P.ea[i], G.P.ed[i]].filter(function (x) { return x >= 0; });
+    var before = ids.map(function (x) { return G.sol[x] === 1; });
     setVal(i, ch, true);
     H.snd('key'); H.vib(6);
     if (H.S.set.autoCheck && ch !== G.P.ch[i]) { G.bad[i] = 1; paintCell(i); H.snd('bad'); }
     updateRing();
     markDirty();
+    /* כל מונח שנפתר עכשיו (גם אם לא זה שעומדים עליו) מקבל הבהוב וצליל */
+    var fresh = ids.filter(function (x, k) { return !before[k] && G.sol[x] === 1; });
     if (checkWin()) return;
-    if (e && !wasFull && !entryHasEmpty(e) && entryCorrect(e)) { flash(e); H.snd('ok'); H.vib(18); }
+    if (fresh.length) {
+      fresh.forEach(function (x) { flash(G.P.entries[x]); });
+      H.snd('ok'); H.vib(18);
+    }
+    if (G.pin) {
+      /* מנעול משבצת: נשארים במקום עד שהמילה נפתרה נכון */
+      if (e && entryCorrect(e)) setPin(false);
+      return;
+    }
     advance();
+  }
+  function setPin(on) {
+    G.pin = !!on;
+    if (V.pinBtn) V.pinBtn.classList.toggle('on', G.pin);
   }
 
   function entryCorrect(e) {
@@ -533,7 +564,8 @@
     var e = G.cur;
     if (!e) { updateBar(); return; }
     var idx = e.cells.indexOf(G.sel), k;
-    for (k = idx + 1; k < e.cells.length; k++) if (!G.val[e.cells[k]]) { moveTo(e.cells[k]); return; }
+    /* עוברים למשבצת הבאה במילה, גם אם היא כבר מלאה (אות של מילה אחרת שנפתרה) */
+    if (idx >= 0 && idx + 1 < e.cells.length) { moveTo(e.cells[idx + 1]); return; }
     for (k = 0; k <= idx; k++) if (!G.val[e.cells[k]]) { moveTo(e.cells[k]); return; }
     if (H.S.set.autoJump) {
       var P = G.P, ord = P.order, n = ord.length, pos = ord.indexOf(e.id);
@@ -549,7 +581,7 @@
   function backspace() {
     if (G.done || G.sel < 0) return;
     var i = G.sel;
-    if (G.val[i] && !G.rev[i]) {
+    if (G.val[i] && !isFixed(i)) {
       setVal(i, '', true); H.snd('key'); updateRing(); markDirty(); updateBar();
       return;
     }
@@ -558,13 +590,14 @@
     for (var k = idx - 1; k >= 0; k--) {
       var ci = e.cells[k];
       G.sel = ci; refreshSel();
-      if (!G.rev[ci]) { if (G.val[ci]) { setVal(ci, '', true); updateRing(); markDirty(); updateBar(); } return; }
+      if (!isFixed(ci)) { if (G.val[ci]) { setVal(ci, '', true); updateRing(); markDirty(); updateBar(); } return; }
     }
   }
 
   function undo() {
     if (G.done) return;
     var u = G.undo.pop();
+    while (u && isLocked(u.i)) u = G.undo.pop();
     if (!u) { H.toast('אין מה לבטל'); return; }
     G.val[u.i] = u.old; G.bad[u.i] = 0; paintCell(u.i);
     G.sel = u.i; G.dir = u.dir; refreshSel();
@@ -575,7 +608,7 @@
     if (G.done || !G.cur) return;
     var any = false;
     G.cur.cells.forEach(function (i) {
-      if (G.val[i] && !G.rev[i]) { setVal(i, '', true); any = true; }
+      if (G.val[i] && !isFixed(i)) { setVal(i, '', true); any = true; }
     });
     if (any) { updateRing(); markDirty(); updateBar(); H.snd('key'); }
   }
@@ -728,7 +761,7 @@
         if (w.length === e.len) { found = w; break; }
       }
       if (!found) { H.toast('לא הבנתי תשובה באורך ' + e.len + ' אותיות'); return; }
-      e.cells.forEach(function (ci, k) { if (!G.rev[ci]) setVal(ci, found[k], true); });
+      e.cells.forEach(function (ci, k) { if (!isFixed(ci)) setVal(ci, found[k], true); });
       updateRing(); markDirty(); updateBar();
       if (!checkWin()) { H.snd('key'); advance(); }
     };
@@ -747,7 +780,7 @@
   function win() {
     var S = H.S, mode = G.pi ? G.pi.mode : 'a';
     var mBefore = H.claimable ? H.claimable() : 0;
-    G.done = true;
+    G.done = true; setPin(false);
     stopTimer();
     persist();
     var earned = 0, bonus = [];

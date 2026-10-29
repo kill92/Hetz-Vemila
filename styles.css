@@ -305,6 +305,8 @@ textarea { resize: vertical; line-height: 1.5; }
 .tool { background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; color: var(--tx); font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 10px; min-width: 48px; }
 .tool .ic { width: 22px; height: 22px; color: var(--ac); }
 .tool:active { background: var(--sf2); }
+.tool.on { background: var(--ac); color: #fff; }
+.tool.on .ic { color: #fff; }
 .g-tools .coin-chip { padding: 4px 10px; }
 .kb { background: var(--kb); padding: 4px 4px 6px; display: flex; flex-direction: column; gap: 6px; touch-action: manipulation; }
 .kb-r { display: flex; gap: 4px; justify-content: center; direction: ltr; }

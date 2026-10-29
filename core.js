@@ -162,12 +162,13 @@
   };
 
   /* ---------- מצב ואחסון ---------- */
+  H.DEFAULT_CLIENT = '295462424089-pq1r7h4so1qu0qi5efd8hso53qejuv1g.apps.googleusercontent.com';
   H.defaults = function () {
     return {
       v: 1, id: H.rid(12), created: Date.now(), updatedAt: 0,
       set: {
         theme: 'dark', sound: true, vib: true, autoCheck: false, autoJump: true,
-        mode: 'a', zoom: 1, clientId: '', lockOn: false, pinHash: '', pinSalt: '', lockSec: 60,
+        mode: 'a', zoom: 1, clientId: H.DEFAULT_CLIENT, lockOn: false, pinHash: '', pinSalt: '', lockSec: 60,
         updateBase: '', unlockAll: false, autoSync: true, welcomed: false, libSeen: false
       },
       name: '', gift: 0, coins: 0, coinsAt: 0, mc: { words: 0, faces: 0, nohint: 0, fast10: 0, fast5: 0, secs: 0, big: 0, earn: 0, hints: 0, dayN: 0, dayD: '' }, m: {},
@@ -202,7 +203,7 @@
     ['sound', 'vib', 'autoCheck', 'autoJump', 'lockOn', 'unlockAll', 'autoSync', 'welcomed', 'libSeen'].forEach(function (k) { if (typeof s[k] === 'boolean') D[k] = s[k]; });
     if (s.mode === 'a' || s.mode === 'k') D.mode = s.mode;
     D.zoom = [1, 1.5, 2].indexOf(+s.zoom) >= 0 ? +s.zoom : 1;
-    D.clientId = str(s.clientId, 200).trim();
+    D.clientId = str(s.clientId, 200).trim() || H.DEFAULT_CLIENT;
     D.pinHash = str(s.pinHash, 100); D.pinSalt = str(s.pinSalt, 40);
     D.lockSec = num(s.lockSec, 60, 0, 86400);
     D.updateBase = str(s.updateBase, 300).trim();
