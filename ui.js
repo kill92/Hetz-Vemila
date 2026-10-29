@@ -496,13 +496,8 @@
   function cloudCard() {
     var S = H.S, set = S.set, c = H.cloud;
     var connected = c.connected();
-    var cid = input(set.clientId, 'Client ID של Google', { dir: 'ltr', 'aria-label': 'Client ID' });
     var kids = [
       row('חשבון Google', connected ? 'מחובר · סנכרון אחרון: ' + ago(S.cloud.at) : 'לא מחובר', null),
-      field('Client ID', cid, 'נוצר פעם אחת ב-Google Cloud. ההסבר המלא במדריך.'),
-      btn('שמור Client ID', 'ghost block', function () {
-        set.clientId = cid.value.trim(); H.touch(); H.toast(set.clientId ? 'נשמר' : 'נמחק');
-      }),
       btn(connected ? 'סנכרן עכשיו' : 'התחבר וסנכרן', 'primary block', function () { c.sync(true); }, 'refresh')
     ];
     if (connected) {
