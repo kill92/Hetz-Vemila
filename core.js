@@ -4,7 +4,7 @@
   var H = window.H = {};
   var E = window.Engine;
 
-  H.VERSION = '1.0.0';
+  H.VERSION = '1.1.0';
   H.KEY = 'hetz.v1';
   H.BANK_VER = window.BANK_VERSION || 1;
 
