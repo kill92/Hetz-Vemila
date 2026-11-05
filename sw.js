@@ -1,7 +1,7 @@
 /* חץ ומילה - Service Worker: קודם הרשת (תמיד גרסה עדכנית), ואם אין אינטרנט - מהמטמון */
 var CACHE = 'hetz-cache-1';
 var FILES = ['./', 'index.html', 'styles.css', 'words.js', 'engine.js', 'core.js', 'game.js', 'ui.js', 'missions.js', 'onboard.js', 'cloud.js', 'boot.js',
-  'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+  'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', function (e) {
   self.skipWaiting();
